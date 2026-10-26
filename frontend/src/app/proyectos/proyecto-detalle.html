@@ -1,0 +1,91 @@
+<section class="project-detail">
+  <a class="back-link" routerLink="/proyectos">← Volver a proyectos</a>
+
+  @if (cargando()) {
+    <div class="loading-state" role="status">Cargando proyecto...</div>
+  } @else if (proyecto(); as actual) {
+    <header class="detail-heading">
+      <div class="detail-mark">{{ actual.clave?.slice(0, 1) || 'P' }}</div>
+      <div class="detail-heading-copy">
+        <p class="eyebrow">{{ actual.clave || 'PROYECTO' }}</p>
+        <h1 class="page-title">{{ actual.nombre }}</h1>
+        <p class="page-description">Tareas de este proyecto, agrupadas por estado.</p>
+      </div>
+    </header>
+
+    <div class="detail-stats" aria-label="Progreso del proyecto">
+      <span><strong>{{ tareas().length }}</strong> tareas</span>
+      <span><strong>{{ delEstado('EN_CURSO').length }}</strong> en curso</span>
+      <span><strong>{{ delEstado('HECHA').length }}</strong> completadas</span>
+      <span><strong>{{ cantidadVencidas() }}</strong> vencidas</span>
+      <span class="completion-track">
+        <i [style.width.%]="tareas().length ? delEstado('HECHA').length / tareas().length * 100 : 0"></i>
+      </span>
+    </div>
+
+    <form
+      #formulario
+      class="feature-form project-task-form"
+      (submit)="crear(titulo.value, descripcion.value, prioridad.value, fecha.value, formulario); $event.preventDefault()"
+    >
+      <div class="task-fields">
+        <input #titulo aria-label="Título de la tarea" placeholder="Nueva tarea" maxlength="200" required />
+        <input #descripcion aria-label="Descripción de la tarea, opcional" placeholder="Añade una nota (opcional)" maxlength="500" />
+      </div>
+      <select #prioridad aria-label="Prioridad">
+        <option value="BAJA">Baja</option>
+        <option value="MEDIA" selected>Media</option>
+        <option value="ALTA">Alta</option>
+      </select>
+      <input #fecha type="date" aria-label="Fecha límite opcional" />
+      <button class="add-button" type="submit" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando...' : 'Añadir tarea' }}
+      </button>
+    </form>
+
+    @if (error()) {
+      <p class="feedback error-feedback" role="alert">{{ error() }}</p>
+    }
+
+    <div class="project-task-columns">
+      @for (columna of columnas; track columna.estado) {
+        <section class="project-task-column">
+          <header>
+            <h2>{{ columna.nombre }}</h2>
+            <span>{{ delEstado(columna.estado).length }}</span>
+          </header>
+          @for (tarea of delEstado(columna.estado); track tarea.id) {
+            <article class="project-task-card">
+              <div class="project-task-card-top">
+                <span [class]="'priority-badge ' + tarea.prioridad">{{ tarea.prioridad }}</span>
+                <span class="project-task-card-actions">
+                  @if (etiquetaFecha(tarea); as etiqueta) {
+                    <span class="due-badge" [class.overdue]="estaVencida(tarea)">{{ etiqueta }}</span>
+                  }
+                  <button type="button" [attr.aria-label]="'Editar ' + tarea.titulo" title="Editar tarea" (click)="editando.set(tarea)">Editar</button>
+                </span>
+              </div>
+              <h3>{{ tarea.titulo }}</h3>
+              @if (tarea.descripcion) {
+                <p>{{ tarea.descripcion }}</p>
+              }
+              <footer>
+                <button type="button" [disabled]="tarea.estado === 'POR_HACER'" (click)="mover(tarea, -1)">← Atrás</button>
+                <button type="button" [disabled]="tarea.estado === 'HECHA'" (click)="mover(tarea, 1)">Avanzar →</button>
+                <button class="delete-task" type="button" (click)="borrar(tarea)">Eliminar</button>
+              </footer>
+            </article>
+          } @empty {
+            <p class="empty-column">Aún no hay tareas.</p>
+          }
+        </section>
+      }
+    </div>
+  } @else if (error()) {
+    <p class="feedback error-feedback" role="alert">{{ error() }}</p>
+  }
+
+  @if (editando(); as tarea) {
+    <app-tarea-editor [tarea]="tarea" (guardar)="guardarEdicion($event)" (cancelar)="editando.set(null)" />
+  }
+</section>

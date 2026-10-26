@@ -2,58 +2,68 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.4.
 
-## Development server
+## Development
 
-To start a local development server, run:
+Start the Spring Boot backend and then run the Angular development server:
 
 ```bash
-ng serve
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Open `http://localhost:4200/`. The development server forwards `/api` requests to `http://localhost:8080` through `proxy.conf.json`; task and project data therefore requires the backend to be available.
+
+## Using Trama
+
+The task board supports:
+
+- Creating, editing, completing, moving, and deleting tasks.
+- Optional descriptions, priorities, due dates, and project assignment.
+- Searching task titles and descriptions, and filtering by priority, status, or due date. **Clear filters** restores the full board.
+- Dragging a task card to another status column. The arrow buttons remain available as a keyboard-friendly alternative.
+- Exporting currently visible (filtered) tasks as a UTF-8 CSV file. Values are escaped for CSV and spreadsheet-formula prefixes are neutralized.
+- A progress summary, overdue count, due-today/overdue labels, and project completion counts calculated from real task lists.
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `N` | Focus the new-task title field |
+| `/` | Focus task search |
+| `Ctrl` + `Shift` + `E` | Export visible tasks to CSV |
+| `Escape` | Close the task editor |
+
+Focus shortcuts are ignored while typing in an input, select, textarea, or editable element. The theme button in the top bar switches between light and dark themes; the selection is saved in browser local storage.
+
+### Motion and accessibility
+
+Short page/card entrance transitions, a restrained perspective lift on hover, and drop-target feedback add visual motion without an external animation or WebGL dependency. The `prefers-reduced-motion: reduce` media preference disables nonessential movement and transitions. Drag-and-drop is an enhancement, not the only way to change a task's status: labeled completion and move buttons are also provided.
+
+## Frontend structure
+
+- `src/app/app.*`: application shell, navigation, theme switch, and router outlet.
+- `src/app/core/models/`: shared TypeScript models for tasks and projects.
+- `src/app/core/services/`: HTTP services that communicate with the backend.
+- `src/app/core/utils/`: shared date and due-date helpers.
+- `src/app/tablero/`: task board, filters, keyboard shortcuts, CSV export, and drag-and-drop.
+- `src/app/proyectos/`: project list and project task details.
+- `src/app/shared/tarea-editor/`: reusable task editing dialog.
+- `src/styles.css`: design tokens, themes, responsive UI primitives, and motion preferences.
+
+## Build and tests
+
+```bash
+npm run build
+npm test -- --watch=false
+```
+
+Run backend tests from the repository root with `backend\mvnw.cmd clean test`.
 
 ## Code scaffolding
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+To generate a new component:
 
 ```bash
 ng generate component component-name
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+For more information about Angular CLI, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

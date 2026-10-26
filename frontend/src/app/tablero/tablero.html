@@ -1,0 +1,204 @@
+<section class="board-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">TABLERO</p>
+      <h1 class="page-title">Tareas</h1>
+      <p class="page-description">Busca, filtra y organiza el trabajo pendiente.</p>
+    </div>
+  </div>
+
+  <div class="board-summary">
+    <div class="summary-copy">
+      <div>
+        <strong>{{ cantidadEstado('HECHA') }} de {{ tareas().length }} tareas completadas</strong>
+        <p>{{ vencidas() }} vencidas · {{ cantidadEstado('EN_CURSO') }} en curso</p>
+      </div>
+    </div>
+    <div class="summary-completion">
+      <span>{{ porcentajeCompletado() }}%</span>
+      <div class="completion-track" role="progressbar" aria-label="Tareas completadas" [attr.aria-valuenow]="porcentajeCompletado()" aria-valuemin="0" aria-valuemax="100">
+        <i [style.width.%]="porcentajeCompletado()"></i>
+      </div>
+    </div>
+  </div>
+
+  <form
+    #formulario
+    class="task-form feature-form"
+    (submit)="crear(titulo.value, descripcion.value, prioridad.value, proyecto.value, fecha.value, formulario); $event.preventDefault()"
+  >
+    <input #titulo aria-label="Título de la tarea" placeholder="Nueva tarea" maxlength="200" required />
+    <input #descripcion class="task-note-input" aria-label="Descripción opcional" placeholder="Nota (opcional)" maxlength="500" />
+    <label class="priority-select">
+      <span class="sr-only">Prioridad</span>
+      <select #prioridad>
+        <option value="BAJA">Prioridad baja</option>
+        <option value="MEDIA" selected>Prioridad media</option>
+        <option value="ALTA">Prioridad alta</option>
+      </select>
+    </label>
+    <label class="project-select">
+      <span class="sr-only">Vincular a proyecto</span>
+      <select #proyecto aria-label="Vincular tarea a un proyecto">
+        <option value="">Sin proyecto</option>
+        @for (item of proyectos(); track item.id) {
+          <option [value]="item.id">{{ item.nombre }}</option>
+        }
+      </select>
+    </label>
+    <label class="date-select">
+      <span class="sr-only">Fecha límite</span>
+      <input #fecha type="date" aria-label="Fecha límite opcional" />
+    </label>
+    <button class="add-button" type="submit" [disabled]="guardando()">
+      {{ guardando() ? 'Guardando...' : 'Añadir tarea' }}
+    </button>
+  </form>
+
+  <div class="board-tools">
+    <label class="search-box">
+      <span aria-hidden="true">⌕</span>
+      <input #buscar type="search" aria-label="Buscar tareas" placeholder="Buscar tareas..." (input)="busqueda.set(buscar.value)" />
+    </label>
+    <label class="filter-select">
+      <span>Prioridad</span>
+      <select #filtroPrioridad aria-label="Filtrar por prioridad" (change)="setPrioridadFiltro(filtroPrioridad.value)">
+        <option value="TODAS">Todas</option>
+        <option value="ALTA">Alta</option>
+        <option value="MEDIA">Media</option>
+        <option value="BAJA">Baja</option>
+      </select>
+    </label>
+    <label class="filter-select">
+      <span>Estado</span>
+      <select #filtroEstado aria-label="Filtrar por estado" (change)="setEstadoFiltro(filtroEstado.value)">
+        <option value="TODOS">Todos</option>
+        <option value="POR_HACER">Por hacer</option>
+        <option value="EN_CURSO">En curso</option>
+        <option value="HECHA">Hechas</option>
+      </select>
+    </label>
+    <label class="filter-select">
+      <span>Fecha</span>
+      <select #filtroFecha aria-label="Filtrar por fecha límite" (change)="setFechaFiltro(filtroFecha.value)">
+        <option value="TODAS">Todas</option>
+        <option value="HOY">Vencen hoy</option>
+        <option value="VENCIDAS">Vencidas</option>
+      </select>
+    </label>
+    @if (hayFiltros()) {
+      <button class="clear-filters" type="button" (click)="limpiarFiltros(); buscar.value = ''; filtroPrioridad.value = 'TODAS'; filtroEstado.value = 'TODOS'; filtroFecha.value = 'TODAS'">Limpiar filtros</button>
+    }
+    <span class="visible-count">{{ tareasVisibles().length }} de {{ tareas().length }} tareas</span>
+    <button class="export-button" type="button" (click)="exportarCsv()" [disabled]="!tareasVisibles().length" title="Exportar las tareas visibles a CSV">
+      Exportar CSV
+    </button>
+    <span class="keyboard-hint" aria-label="Atajos de teclado">
+      <kbd>N</kbd> nueva · <kbd>/</kbd> buscar · <kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>E</kbd> CSV
+    </span>
+  </div>
+
+  @if (error()) {
+    <p class="feedback error-feedback" role="alert">{{ error() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="loading-state" role="status">Preparando tu tablero...</div>
+  } @else {
+    <div class="board-columns">
+      @for (columna of columnas; track columna.estado) {
+        <section
+          [class]="'board-column ' + columna.estado"
+          [class.drop-target]="zonaDeSoltado() === columna.estado"
+          (dragover)="permitirSoltar($event, columna.estado)"
+          (dragleave)="zonaDeSoltado.set(null)"
+          (drop)="soltar($event, columna.estado)"
+        >
+          <header class="column-heading">
+            <div class="column-title">
+              <span class="column-indicator"></span>
+              <h2>{{ columna.nombre }}</h2>
+              <span class="task-count">{{ delEstado(columna.estado).length }}</span>
+            </div>
+            <p>{{ columna.ayuda }}</p>
+          </header>
+
+          <div class="task-list">
+            @for (tarea of delEstado(columna.estado); track tarea.id) {
+              <article
+                class="task-card"
+                [class.is-dragging]="arrastrando() === tarea.id"
+                [attr.draggable]="tarea.id !== undefined"
+                (dragstart)="iniciarArrastre($event, tarea)"
+                (dragend)="finalizarArrastre()"
+              >
+                <div class="task-card-heading">
+                  <button
+                    class="task-check"
+                    [class.checked]="tarea.estado === 'HECHA'"
+                    type="button"
+                    [attr.aria-label]="tarea.estado === 'HECHA' ? 'Marcar como pendiente' : 'Marcar como completada'"
+                    (click)="completar(tarea)"
+                  >{{ tarea.estado === 'HECHA' ? '✓' : '' }}</button>
+                  <div class="task-badges">
+                    <span class="priority-badge" [class]="'priority-badge ' + tarea.prioridad">
+                      {{ tarea.prioridad === 'ALTA' ? 'Alta' : tarea.prioridad === 'BAJA' ? 'Baja' : 'Media' }}
+                    </span>
+                    @if (etiquetaFecha(tarea); as etiqueta) {
+                      <span class="due-badge" [class.overdue]="estaVencida(tarea)">{{ etiqueta }}</span>
+                    }
+                  </div>
+                </div>
+                <h3>{{ tarea.titulo }}</h3>
+                @if (tarea.descripcion) {
+                  <p class="task-description">{{ tarea.descripcion }}</p>
+                }
+                <footer class="task-card-footer">
+                  <div class="task-actions">
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Editar ' + tarea.titulo"
+                      title="Editar tarea"
+                      (click)="editando.set(tarea)"
+                    >✎</button>
+                    <button
+                      type="button"
+                      [disabled]="tarea.estado === 'POR_HACER'"
+                      [attr.aria-label]="'Mover ' + tarea.titulo + ' a la columna anterior'"
+                      title="Mover atrás"
+                      (click)="mover(tarea, -1)"
+                    >←</button>
+                    <button
+                      type="button"
+                      [disabled]="tarea.estado === 'HECHA'"
+                      [attr.aria-label]="'Mover ' + tarea.titulo + ' a la siguiente columna'"
+                      title="Mover adelante"
+                      (click)="mover(tarea, 1)"
+                    >→</button>
+                    <button
+                      class="delete-action"
+                      type="button"
+                      [attr.aria-label]="'Eliminar ' + tarea.titulo"
+                      title="Eliminar tarea"
+                      (click)="borrar(tarea)"
+                    >×</button>
+                  </div>
+                </footer>
+              </article>
+            } @empty {
+              <div class="column-empty">
+                <span aria-hidden="true">{{ busqueda() || prioridadFiltro() !== 'TODAS' ? '⌕' : (columna.estado === 'HECHA' ? '✧' : '＋') }}</span>
+                <p>{{ hayFiltros() ? 'No hay tareas que coincidan' : (columna.estado === 'HECHA' ? 'Completa una tarea para verla aquí.' : 'Añade una tarea o muévela a esta columna.') }}</p>
+              </div>
+            }
+            <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
+          </div>
+        </section>
+      }
+    </div>
+  }
+
+  @if (editando(); as tarea) {
+    <app-tarea-editor [tarea]="tarea" (guardar)="guardarEdicion($event)" (cancelar)="editando.set(null)" />
+  }
+</section>

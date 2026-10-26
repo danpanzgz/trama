@@ -1,26 +1,20 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-
-export type Estado = 'POR_HACER' | 'EN_CURSO' | 'HECHA';
-export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA';
-
-export interface Tarea {
-  id?: number;
-  titulo: string;
-  descripcion?: string;
-  estado: Estado;
-  prioridad: Prioridad;
-}
+import { Tarea } from '../models/tarea.model';
 
 @Injectable({ providedIn: 'root' })
 export class TareaService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   listar() {
     return this.http.get<Tarea[]>('/api/tareas');
   }
 
-  crear(tarea: Tarea) {
+  crear(tarea: Tarea, proyectoId?: number) {
+    if (proyectoId !== undefined) {
+      return this.http.post<Tarea>(`/api/proyectos/${proyectoId}/tareas`, tarea);
+    }
+
     return this.http.post<Tarea>('/api/tareas', tarea);
   }
 

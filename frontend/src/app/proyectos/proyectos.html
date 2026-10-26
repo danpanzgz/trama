@@ -1,0 +1,72 @@
+<section class="projects-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">ORGANIZACIÓN</p>
+      <h1 class="page-title">Proyectos</h1>
+      <p class="page-description">Agrupa tareas y consulta el avance de cada proyecto.</p>
+    </div>
+    <span class="project-total">{{ proyectosVisibles().length }} de {{ proyectos().length }} proyectos</span>
+  </div>
+
+  <label class="project-search">
+    <span aria-hidden="true">⌕</span>
+    <input #buscar type="search" aria-label="Buscar proyectos" placeholder="Buscar por nombre o clave" (input)="busqueda.set(buscar.value)" />
+  </label>
+
+  <form
+    #formulario
+    class="project-form feature-form"
+    (submit)="crear(nombre.value, formulario); $event.preventDefault()"
+  >
+    <input #nombre aria-label="Nombre del proyecto" placeholder="Nombre del proyecto" maxlength="120" required />
+    <button class="add-button" type="submit" [disabled]="guardando()">
+      {{ guardando() ? 'Creando...' : 'Crear proyecto' }}
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="feedback error-feedback" role="alert">{{ error() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="loading-state" role="status">Cargando tus proyectos...</div>
+  } @else if (proyectosVisibles().length) {
+    <div class="project-grid">
+      @for (proyecto of proyectosVisibles(); track proyecto.id) {
+        <a class="project-card" [routerLink]="['/proyectos', proyecto.id]">
+          <div class="project-card-top">
+            <span class="project-mark">{{ proyecto.clave?.slice(0, 1) || 'P' }}</span>
+            <span class="project-key">{{ proyecto.clave || 'PROY' }}</span>
+          </div>
+          <h2>{{ proyecto.nombre }}</h2>
+          @if (estadisticas()[proyecto.id]; as resumen) {
+            <p>{{ resumen.completadas }} de {{ resumen.total }} tareas completadas</p>
+          } @else {
+            <p>El progreso no está disponible.</p>
+          }
+          <div class="project-card-bottom">
+            @if (estadisticas()[proyecto.id]; as resumen) {
+              <span class="project-progress" role="progressbar" aria-label="Progreso del proyecto" [attr.aria-valuenow]="resumen.total ? resumen.completadas / resumen.total * 100 : 0" aria-valuemin="0" aria-valuemax="100">
+                <i [style.width.%]="resumen.total ? resumen.completadas / resumen.total * 100 : 0"></i>
+              </span>
+            } @else {
+              <span class="project-progress unavailable"></span>
+            }
+            <span class="project-arrow">Abrir →</span>
+          </div>
+        </a>
+      }
+    </div>
+  } @else if (proyectos().length) {
+    <div class="projects-empty">
+      <h2>No hay proyectos con ese nombre</h2>
+      <p>Prueba con otra búsqueda o limpia el campo.</p>
+      <button class="clear-search" type="button" (click)="busqueda.set(''); buscar.value = ''">Limpiar búsqueda</button>
+    </div>
+  } @else {
+    <div class="projects-empty">
+      <h2>Aún no hay proyectos</h2>
+      <p>Crea uno para agrupar sus tareas y seguir el progreso.</p>
+    </div>
+  }
+</section>

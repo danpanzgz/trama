@@ -1,0 +1,44 @@
+<div class="editor-backdrop" (click)="cancelar.emit()">
+  <section
+    class="editor-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editor-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="editor-header">
+      <div>
+        <p class="editor-eyebrow">DETALLES DE LA TAREA</p>
+        <h2 id="editor-title">Editar tarea</h2>
+      </div>
+      <button class="editor-close" type="button" aria-label="Cerrar" (click)="cancelar.emit()">×</button>
+    </header>
+
+    <form #formulario (submit)="enviar(titulo.value, descripcion.value, prioridad.value, fecha.value); $event.preventDefault()">
+      <label class="editor-field">
+        <span>Título</span>
+        <input #titulo [value]="tarea.titulo" maxlength="200" required autofocus />
+      </label>
+      <label class="editor-field">
+        <span>Descripción <small>Opcional</small></span>
+        <textarea #descripcion rows="4" maxlength="2000" [value]="tarea.descripcion || ''" placeholder="Añade contexto, notas o próximos pasos..."></textarea>
+      </label>
+      <label class="editor-field">
+        <span>Prioridad</span>
+        <select #prioridad [value]="tarea.prioridad">
+          <option value="BAJA">Baja</option>
+          <option value="MEDIA">Media</option>
+          <option value="ALTA">Alta</option>
+        </select>
+      </label>
+      <label class="editor-field">
+        <span>Fecha límite <small>Opcional</small></span>
+        <input #fecha type="date" [value]="tarea.fechaVencimiento || ''" />
+      </label>
+      <footer class="editor-actions">
+        <button class="editor-cancel" type="button" (click)="cancelar.emit()">Cancelar</button>
+        <button class="editor-save" type="submit">Guardar cambios</button>
+      </footer>
+    </form>
+  </section>
+</div>
