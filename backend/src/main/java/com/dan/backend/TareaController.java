@@ -31,6 +31,7 @@ public class TareaController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         tarea.setTitulo(datos.getTitulo());
         tarea.setDescripcion(datos.getDescripcion());
+        tarea.setFechaVencimiento(datos.getFechaVencimiento());
         tarea.setEstado(datos.getEstado());
         tarea.setPrioridad(datos.getPrioridad());
         return repo.save(tarea);
